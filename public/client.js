@@ -1,25 +1,29 @@
 const socket = io();
 
 let localStream;
-let peers = {};
-let isMuted = false;
 let analyser, dataArray;
+let isMuted = false;
 
-// JOIN
+// 🚀 JOIN ROOM (WITH PROFILE)
 async function join() {
-  const username = document.getElementById("username").value;
+  const username = localStorage.getItem("name");
+  const photo = localStorage.getItem("photo");
   const room = document.getElementById("room").value;
 
-  if (!username || !room) return alert("Enter details");
+  if (!username || !room) {
+    alert("Login and enter room name!");
+    return;
+  }
 
+  // 🎤 Get mic
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
   setupAudioAnalysis();
 
-  socket.emit("join-room", { username, room });
+  socket.emit("join-room", { username, room, photo });
 }
 
-// AUDIO DETECTION (speaking)
+// 🎤 AUDIO DETECTION
 function setupAudioAnalysis() {
   const audioContext = new AudioContext();
   const source = audioContext.createMediaStreamSource(localStream);
@@ -49,13 +53,7 @@ function detectSpeaking() {
   requestAnimationFrame(detectSpeaking);
 }
 
-// JOIN SUCCESS
-socket.on("joined-success", ({ room }) => {
-  document.querySelector(".topbar").style.display = "none";
-  document.getElementById("roomName").innerText = "Room: " + room;
-});
-
-// MUTE
+// 🎤 MUTE / UNMUTE
 function toggleMute() {
   if (!localStream) return alert("Join first!");
 
@@ -66,7 +64,7 @@ function toggleMute() {
   btn.innerText = isMuted ? "🔇 OFF" : "🎤 ON";
 }
 
-// USERS UI
+// 👥 UPDATE USERS WITH PROFILE
 socket.on("update-users", (users) => {
   const userDiv = document.getElementById("users");
   userDiv.innerHTML = "";
@@ -75,43 +73,70 @@ socket.on("update-users", (users) => {
     const div = document.createElement("div");
     div.className = "user";
 
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
-    avatar.innerText = u.username[0];
-
-    const name = document.createElement("span");
-    name.innerText = u.username;
-
-    div.appendChild(avatar);
-    div.appendChild(name);
+    div.innerHTML = `
+      <img src="/uploads/${u.photo}" width="30" style="border-radius:50%">
+      <span>${u.username}</span>
+    `;
 
     userDiv.appendChild(div);
   });
 });
 
-// CHAT
+// 📜 LOAD OLD MESSAGES
+socket.on("load-messages", (messages) => {
+  const box = document.getElementById("messages");
+  box.innerHTML = "";
+
+  messages.forEach((msg) => {
+    const div = document.createElement("div");
+
+    div.innerHTML = `
+      <img src="/uploads/${msg.photo}" width="30" style="border-radius:50%">
+      <b>${msg.user}:</b> ${msg.message}
+    `;
+
+    box.appendChild(div);
+  });
+});
+
+// 💬 SEND MESSAGE
 function sendMsg() {
-  const msg = document.getElementById("msg").value;
+  const msgInput = document.getElementById("msg");
+  const msg = msgInput.value;
+
   if (!msg) return;
 
+  const username = localStorage.getItem("name");
+  const photo = localStorage.getItem("photo");
+
   const div = document.createElement("div");
-  div.innerText = "You: " + msg;
+  div.innerHTML = `
+    <img src="/uploads/${photo}" width="30" style="border-radius:50%">
+    <b>You:</b> ${msg}
+  `;
+
   document.getElementById("messages").appendChild(div);
 
   socket.emit("send-message", msg);
-  document.getElementById("msg").value = "";
+
+  msgInput.value = "";
 }
 
-// ENTER KEY
+// 📩 RECEIVE MESSAGE
+socket.on("receive-message", (data) => {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <img src="/uploads/${data.photo}" width="30" style="border-radius:50%">
+    <b>${data.user}:</b> ${data.message}
+  `;
+
+  document.getElementById("messages").appendChild(div);
+});
+
+// ⌨️ ENTER KEY SEND
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("msg").addEventListener("keypress", (e) => {
     if (e.key === "Enter") sendMsg();
   });
-});
-
-// RECEIVE MSG
-socket.on("receive-message", (data) => {
-  const div = document.createElement("div");
-  div.innerText = data.user + ": " + data.message;
-  document.getElementById("messages").appendChild(div);
 });
