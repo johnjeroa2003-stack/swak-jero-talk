@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Swak Jero Talk</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <div class="sidebar">
+    <h2>🔥 Swak Jero Talk</h2>
+    <h3 id="roomName">Room: -</h3>
+    <div id="users"></div>
+  </div>
+
+  <div class="main">
+
+    <div class="topbar">
+      <input id="username" placeholder="Your Name">
+      <input id="room" placeholder="Room Name">
+      <button onclick="join()">Join</button>
+      <button id="micBtn" onclick="toggleMute()">🎤 ON</button>
+    </div>
+
+    <div class="center">
+      <h2>🎧 Voice Room Active</h2>
+    </div>
+
+    <div id="messages"></div>
+
+    <div class="input-box">
+      <input id="msg" placeholder="Type message...">
+      <button onclick="sendMsg()">Send</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
+
+</body>
+</html>
